@@ -1,29 +1,22 @@
 {
-  "name": "workspace",
+  "name": "fantasy-ufc-mvp",
   "version": "1.0.0",
-  "description": "A Fantasy MMA website where users draft fighters",
-  "main": "src/server.js",
+  "private": true,
+  "description": "Fantasy UFC MVP with Next.js and PostgreSQL",
   "scripts": {
-    "start": "node src/server.js"
+    "dev": "npm run db:init && next dev",
+    "build": "npm run db:init && next build",
+    "start": "next start",
+    "db:init": "node scripts/init-db.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/rielmitchell21/Fantasy-mma.git"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/rielmitchell21/Fantasy-mma/issues"
-  },
-  "homepage": "https://github.com/rielmitchell21/Fantasy-mma#readme",
   "dependencies": {
     "bcryptjs": "^3.0.3",
-    "better-sqlite3": "^12.6.2",
-    "connect-sqlite3": "^0.9.16",
+    "cookie": "^1.0.2",
     "dayjs": "^1.11.19",
-    "ejs": "^5.0.1",
-    "express": "^5.2.1",
-    "express-session": "^1.19.0"
+    "next": "^15.5.3",
+    "pg": "^8.16.3",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "uuid": "^13.0.0"
   }
 }

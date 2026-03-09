@@ -1,61 +1,64 @@
-# Fantasy UFC League Platform
+# Fantasy UFC MVP (Next.js + Node.js API + PostgreSQL)
 
-A full-stack fantasy UFC website where users can sign up, join leagues, draft fighters, and track scoring over a one-year season.
+This repo contains a complete fantasy UFC MVP:
 
-## Features implemented
+- **Frontend:** Next.js
+- **Backend:** Node.js API routes (inside Next.js)
+- **Database:** PostgreSQL
+- **Auth:** signup/login/logout with server-side sessions
+- **Leagues:** 5-10 users
+- **Draft:** 15-20 fighters per user, UFC-contracted fighters only
+- **Scoring:** winner-only scoring, max 6 points per fight
 
-- User sign up / login / logout
-- League creation and join via invite code
-- League constraints:
-  - 5-10 users per league
-  - 15-20 fighters per user roster
-- Draft start control (commissioner only)
-- Season window:
-  - Starts when draft is started
-  - Ends exactly one year later
-  - No fights before draft start are counted
-- Fighter pool:
-  - UFC-contracted fighters only (`has_ufc_contract = 1`)
-  - Seeded with an initial UFC list, and commissioner can add more
-- Fight recording (commissioner only)
-- Automatic standings/scoring per your rules
+## Scoring Rules
 
-## Scoring rules (max 6 points on a win)
-
-For each **winning fighter**:
+Winning fighter gets:
 
 - 1 point for win
 - +1 for finish
 - +1 for 5-round fight
 - +1 for championship fight
-- +1 for fighting a ranked fighter
-- +1 for vacating a title in another weight class to move divisions and fight for a championship
+- +1 for fighting ranked opponent
+- +1 for title move fight
 
-If a fighter loses: **0 points**.
+Losing fighter gets **0** points.
 
-## Tech stack
+## Local Setup
 
-- Node.js + Express
-- SQLite (`better-sqlite3`)
-- EJS templates
-- Session auth (`express-session` + `connect-sqlite3`)
-
-## Run locally
+1) Start PostgreSQL:
 
 ```bash
-npm install
-npm start
+docker compose up -d
 ```
 
-Then open: `http://localhost:3000`
-
-Optional:
+2) Configure env:
 
 ```bash
 cp .env.example .env
 ```
 
-## Notes
+3) Install and run:
 
-- Database file is created at `data/fantasy-ufc.db`.
-- Session storage is created at `data/sessions.sqlite`.
+```bash
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000`.
+
+`npm run dev` automatically runs DB initialization (`scripts/init-db.js`) before starting Next.js.
+
+## Main API Endpoints
+
+- `POST /api/auth/signup`
+- `POST /api/auth/login`
+- `POST /api/auth/logout`
+- `GET /api/auth/me`
+- `GET /api/leagues`
+- `POST /api/leagues`
+- `POST /api/leagues/join`
+- `GET /api/leagues/:id`
+- `POST /api/leagues/:id/start-draft`
+- `POST /api/leagues/:id/draft`
+- `POST /api/leagues/:id/fighters`
+- `POST /api/leagues/:id/fights`
