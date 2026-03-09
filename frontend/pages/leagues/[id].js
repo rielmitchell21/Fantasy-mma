@@ -1,16 +1,16 @@
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import Layout from "../../components/Layout";
-import { fetchCurrentUser } from "../../lib/client-auth";
+import { apiRequest, getCurrentUser } from "../../lib/api";
 
 export default function LeaguePage() {
   const router = useRouter();
-  const leagueId = router.query.id;
+  const { id } = router.query;
 
   const [user, setUser] = useState(null);
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
-  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [leagueData, setLeagueData] = useState(null);
   const [draftFighterId, setDraftFighterId] = useState("");
   const [fighterForm, setFighterForm] = useState({ name: "", weightClass: "", isRanked: false });
   const [fightForm, setFightForm] = useState({
@@ -26,116 +26,109 @@ export default function LeaguePage() {
     wasTitleMoveFight: false
   });
 
-  async function loadData() {
-    if (!leagueId) return;
+  async function loadLeague() {
+    if (!id) return;
     setLoading(true);
     setError("");
-    const me = await fetchCurrentUser();
-    if (!me) {
-      window.location.href = "/login";
-      return;
-    }
-    setUser(me);
+    try {
+      const me = await getCurrentUser();
+      if (!me) {
+        router.replace("/login");
+        return;
+      }
+      setUser(me);
 
-    const response = await fetch(`/api/leagues/${leagueId}`);
-    const payload = await response.json();
-    if (!response.ok) {
-      setError(payload.error || "Failed to load league.");
+      const data = await apiRequest(`/api/leagues/${id}`);
+      setLeagueData(data);
+
+      if (data.availableFighters?.length) {
+        setDraftFighterId(String(data.availableFighters[0].id));
+      }
+      if (data.allUfcFighters?.length > 1) {
+        setFightForm((prev) => ({
+          ...prev,
+          fightDate: new Date().toISOString().slice(0, 10),
+          winnerFighterId: String(data.allUfcFighters[0].id),
+          loserFighterId: String(data.allUfcFighters[1].id)
+        }));
+      }
+    } catch (requestError) {
+      setError(requestError.message);
+    } finally {
       setLoading(false);
-      return;
     }
-    setData(payload);
-    if (payload.availableFighters?.length) {
-      setDraftFighterId(String(payload.availableFighters[0].id));
-    }
-    if (payload.allUfcFighters?.length > 1) {
-      setFightForm((prev) => ({
-        ...prev,
-        fightDate: new Date().toISOString().slice(0, 10),
-        winnerFighterId: String(payload.allUfcFighters[0].id),
-        loserFighterId: String(payload.allUfcFighters[1].id)
-      }));
-    }
-    setLoading(false);
   }
 
   useEffect(() => {
-    loadData();
-  }, [leagueId]);
+    loadLeague();
+  }, [id]);
 
   async function startDraft() {
     setError("");
-    const response = await fetch(`/api/leagues/${leagueId}/start-draft`, { method: "POST" });
-    const payload = await response.json();
-    if (!response.ok) {
-      setError(payload.error || "Failed to start draft.");
-      return;
+    try {
+      await apiRequest(`/api/leagues/${id}/start-draft`, { method: "POST" });
+      await loadLeague();
+    } catch (requestError) {
+      setError(requestError.message);
     }
-    await loadData();
   }
 
-  async function makeDraftPick(e) {
-    e.preventDefault();
+  async function makePick(event) {
+    event.preventDefault();
     setError("");
-    const response = await fetch(`/api/leagues/${leagueId}/draft`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ fighterId: Number(draftFighterId) })
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      setError(payload.error || "Draft pick failed.");
-      return;
+    try {
+      await apiRequest(`/api/leagues/${id}/draft`, {
+        method: "POST",
+        body: JSON.stringify({ fighterId: Number(draftFighterId) })
+      });
+      await loadLeague();
+    } catch (requestError) {
+      setError(requestError.message);
     }
-    await loadData();
   }
 
-  async function addFighter(e) {
-    e.preventDefault();
+  async function addFighter(event) {
+    event.preventDefault();
     setError("");
-    const response = await fetch(`/api/leagues/${leagueId}/fighters`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(fighterForm)
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      setError(payload.error || "Failed to add fighter.");
-      return;
+    try {
+      await apiRequest(`/api/leagues/${id}/fighters`, {
+        method: "POST",
+        body: JSON.stringify(fighterForm)
+      });
+      setFighterForm({ name: "", weightClass: "", isRanked: false });
+      await loadLeague();
+    } catch (requestError) {
+      setError(requestError.message);
     }
-    setFighterForm({ name: "", weightClass: "", isRanked: false });
-    await loadData();
   }
 
-  async function addFight(e) {
-    e.preventDefault();
+  async function recordFight(event) {
+    event.preventDefault();
     setError("");
-    const response = await fetch(`/api/leagues/${leagueId}/fights`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        ...fightForm,
-        winnerFighterId: Number(fightForm.winnerFighterId),
-        loserFighterId: Number(fightForm.loserFighterId)
-      })
-    });
-    const payload = await response.json();
-    if (!response.ok) {
-      setError(payload.error || "Failed to record fight.");
-      return;
+    try {
+      await apiRequest(`/api/leagues/${id}/fights`, {
+        method: "POST",
+        body: JSON.stringify({
+          ...fightForm,
+          winnerFighterId: Number(fightForm.winnerFighterId),
+          loserFighterId: Number(fightForm.loserFighterId)
+        })
+      });
+      await loadLeague();
+    } catch (requestError) {
+      setError(requestError.message);
     }
-    await loadData();
   }
 
   if (loading) {
     return (
       <Layout user={user} title="League">
-        <p>Loading...</p>
+        <p>Loading league...</p>
       </Layout>
     );
   }
 
-  if (!data) {
+  if (!leagueData) {
     return (
       <Layout user={user} title="League">
         <p className="error">{error || "League not found."}</p>
@@ -144,7 +137,7 @@ export default function LeaguePage() {
   }
 
   const { league, members, myRoster, availableFighters, allUfcFighters, standings, fights, isCommissioner } =
-    data;
+    leagueData;
 
   return (
     <Layout user={user} title={league.name}>
@@ -152,19 +145,19 @@ export default function LeaguePage() {
 
       <section className="card">
         <p>
-          Invite: <strong>{league.invite_code}</strong> | Commissioner:{" "}
+          Invite code: <strong>{league.invite_code}</strong> | Commissioner:{" "}
           <strong>{league.commissioner_username}</strong>
         </p>
         <p>
           Members: {league.member_count}/{league.max_users} | Roster size: {league.roster_size}
         </p>
         <p>
-          Draft started: {league.draft_started_at || "No"} | Season ends:{" "}
+          Draft start: {league.draft_started_at || "Not started"} | Season end:{" "}
           {league.season_ends_at || "Not set"}
         </p>
         {isCommissioner && !league.draft_started_at ? (
           <button className="button" onClick={startDraft}>
-            Start Draft (starts 1-year scoring season)
+            Start Draft (begins 1-year scoring window)
           </button>
         ) : null}
       </section>
@@ -182,12 +175,12 @@ export default function LeaguePage() {
               </tr>
             </thead>
             <tbody>
-              {standings.map((row, index) => (
-                <tr key={row.userId}>
+              {standings.map((item, index) => (
+                <tr key={item.userId}>
                   <td>{index + 1}</td>
-                  <td>{row.username}</td>
-                  <td>{row.points}</td>
-                  <td>{row.scoringWins}</td>
+                  <td>{item.username}</td>
+                  <td>{item.points}</td>
+                  <td>{item.scoringWins}</td>
                 </tr>
               ))}
             </tbody>
@@ -211,36 +204,40 @@ export default function LeaguePage() {
           <h2>
             My Roster ({myRoster.length}/{league.roster_size})
           </h2>
-          <ul>
-            {myRoster.map((fighter) => (
-              <li key={fighter.id}>
-                {fighter.name} - {fighter.weight_class || "N/A"}
-              </li>
-            ))}
-          </ul>
+          {!myRoster.length ? (
+            <p>No fighters drafted yet.</p>
+          ) : (
+            <ul>
+              {myRoster.map((fighter) => (
+                <li key={fighter.id}>
+                  {fighter.name} - {fighter.weight_class || "N/A"}
+                </li>
+              ))}
+            </ul>
+          )}
+
           {league.draft_started_at ? (
-            <form className="form-grid" onSubmit={makeDraftPick}>
+            <form className="form-grid" onSubmit={makePick}>
               <label>
                 Draft fighter
                 <select
-                  value={draftFighterId}
-                  onChange={(e) => setDraftFighterId(e.target.value)}
                   required
+                  value={draftFighterId}
+                  onChange={(event) => setDraftFighterId(event.target.value)}
                 >
                   {availableFighters.map((fighter) => (
                     <option key={fighter.id} value={fighter.id}>
-                      {fighter.name}
-                      {fighter.is_ranked ? " (Ranked)" : ""}
+                      {fighter.name} {fighter.is_ranked ? "(Ranked)" : ""}
                     </option>
                   ))}
                 </select>
               </label>
               <button className="button" type="submit" disabled={!availableFighters.length}>
-                Draft
+                Draft Pick
               </button>
             </form>
           ) : (
-            <p>Draft has not started yet.</p>
+            <p>Draft has not started.</p>
           )}
         </section>
 
@@ -251,21 +248,21 @@ export default function LeaguePage() {
           ) : (
             <>
               <h3>Add UFC Fighter</h3>
-              <form onSubmit={addFighter} className="form-grid">
+              <form className="form-grid" onSubmit={addFighter}>
                 <label>
-                  Name
+                  Fighter name
                   <input
                     required
                     value={fighterForm.name}
-                    onChange={(e) => setFighterForm({ ...fighterForm, name: e.target.value })}
+                    onChange={(event) => setFighterForm({ ...fighterForm, name: event.target.value })}
                   />
                 </label>
                 <label>
                   Weight class
                   <input
                     value={fighterForm.weightClass}
-                    onChange={(e) =>
-                      setFighterForm({ ...fighterForm, weightClass: e.target.value })
+                    onChange={(event) =>
+                      setFighterForm({ ...fighterForm, weightClass: event.target.value })
                     }
                   />
                 </label>
@@ -273,7 +270,9 @@ export default function LeaguePage() {
                   <input
                     type="checkbox"
                     checked={fighterForm.isRanked}
-                    onChange={(e) => setFighterForm({ ...fighterForm, isRanked: e.target.checked })}
+                    onChange={(event) =>
+                      setFighterForm({ ...fighterForm, isRanked: event.target.checked })
+                    }
                   />
                   Ranked fighter
                 </label>
@@ -283,21 +282,24 @@ export default function LeaguePage() {
               </form>
 
               <h3>Record Fight</h3>
-              <form onSubmit={addFight} className="form-grid">
+              <form className="form-grid" onSubmit={recordFight}>
                 <label>
-                  Fight date
+                  Date
                   <input
-                    type="date"
                     required
+                    type="date"
                     value={fightForm.fightDate}
-                    onChange={(e) => setFightForm({ ...fightForm, fightDate: e.target.value })}
+                    onChange={(event) => setFightForm({ ...fightForm, fightDate: event.target.value })}
                   />
                 </label>
                 <label>
                   Winner
                   <select
+                    required
                     value={fightForm.winnerFighterId}
-                    onChange={(e) => setFightForm({ ...fightForm, winnerFighterId: e.target.value })}
+                    onChange={(event) =>
+                      setFightForm({ ...fightForm, winnerFighterId: event.target.value })
+                    }
                   >
                     {allUfcFighters.map((fighter) => (
                       <option key={fighter.id} value={fighter.id}>
@@ -309,8 +311,11 @@ export default function LeaguePage() {
                 <label>
                   Loser
                   <select
+                    required
                     value={fightForm.loserFighterId}
-                    onChange={(e) => setFightForm({ ...fightForm, loserFighterId: e.target.value })}
+                    onChange={(event) =>
+                      setFightForm({ ...fightForm, loserFighterId: event.target.value })
+                    }
                   >
                     {allUfcFighters.map((fighter) => (
                       <option key={fighter.id} value={fighter.id}>
@@ -323,7 +328,7 @@ export default function LeaguePage() {
                   Method
                   <input
                     value={fightForm.method}
-                    onChange={(e) => setFightForm({ ...fightForm, method: e.target.value })}
+                    onChange={(event) => setFightForm({ ...fightForm, method: event.target.value })}
                     placeholder="KO/TKO, submission, decision..."
                   />
                 </label>
@@ -331,7 +336,7 @@ export default function LeaguePage() {
                   <input
                     type="checkbox"
                     checked={fightForm.wasFinish}
-                    onChange={(e) => setFightForm({ ...fightForm, wasFinish: e.target.checked })}
+                    onChange={(event) => setFightForm({ ...fightForm, wasFinish: event.target.checked })}
                   />
                   Finish (+1)
                 </label>
@@ -339,28 +344,28 @@ export default function LeaguePage() {
                   <input
                     type="checkbox"
                     checked={fightForm.wasFiveRoundFight}
-                    onChange={(e) =>
-                      setFightForm({ ...fightForm, wasFiveRoundFight: e.target.checked })
+                    onChange={(event) =>
+                      setFightForm({ ...fightForm, wasFiveRoundFight: event.target.checked })
                     }
                   />
-                  5-round fight (+1)
+                  5-round (+1)
                 </label>
                 <label className="inline-row">
                   <input
                     type="checkbox"
                     checked={fightForm.wasChampionshipFight}
-                    onChange={(e) =>
-                      setFightForm({ ...fightForm, wasChampionshipFight: e.target.checked })
+                    onChange={(event) =>
+                      setFightForm({ ...fightForm, wasChampionshipFight: event.target.checked })
                     }
                   />
-                  Championship fight (+1)
+                  Championship (+1)
                 </label>
                 <label className="inline-row">
                   <input
                     type="checkbox"
                     checked={fightForm.facedRankedOpponent}
-                    onChange={(e) =>
-                      setFightForm({ ...fightForm, facedRankedOpponent: e.target.checked })
+                    onChange={(event) =>
+                      setFightForm({ ...fightForm, facedRankedOpponent: event.target.checked })
                     }
                   />
                   Ranked opponent (+1)
@@ -369,22 +374,22 @@ export default function LeaguePage() {
                   <input
                     type="checkbox"
                     checked={fightForm.wasTitleMoveFight}
-                    onChange={(e) =>
-                      setFightForm({ ...fightForm, wasTitleMoveFight: e.target.checked })
+                    onChange={(event) =>
+                      setFightForm({ ...fightForm, wasTitleMoveFight: event.target.checked })
                     }
                   />
-                  Title move fight (+1)
+                  Title move (+1)
                 </label>
                 <label>
                   Notes
                   <textarea
                     rows={3}
                     value={fightForm.notes}
-                    onChange={(e) => setFightForm({ ...fightForm, notes: e.target.value })}
+                    onChange={(event) => setFightForm({ ...fightForm, notes: event.target.value })}
                   />
                 </label>
                 <button className="button" type="submit">
-                  Record Fight
+                  Save Fight
                 </button>
               </form>
             </>
@@ -418,7 +423,7 @@ export default function LeaguePage() {
             ))}
             {!fights.length ? (
               <tr>
-                <td colSpan={6}>No fights scored yet.</td>
+                <td colSpan={6}>No scored fights yet.</td>
               </tr>
             ) : null}
           </tbody>

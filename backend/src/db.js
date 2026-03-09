@@ -6,7 +6,7 @@ const connectionString =
 
 const pool = new Pool({ connectionString });
 
-const fighters = [
+const seededFighters = [
   ["Islam Makhachev", "Lightweight", true],
   ["Ilia Topuria", "Featherweight", true],
   ["Alexander Volkanovski", "Featherweight", true],
@@ -35,24 +35,31 @@ const fighters = [
   ["Jon Jones", "Heavyweight", true],
   ["Ciryl Gane", "Heavyweight", true],
   ["Sergei Pavlovich", "Heavyweight", true],
-  ["Manon Fiorot", "Women Flyweight", true],
-  ["Valentina Shevchenko", "Women Flyweight", true],
-  ["Alexa Grasso", "Women Flyweight", true],
-  ["Erin Blanchfield", "Women Flyweight", true],
-  ["Zhang Weili", "Women Strawweight", true],
-  ["Tatiana Suarez", "Women Strawweight", true],
-  ["Yan Xiaonan", "Women Strawweight", true],
-  ["Amanda Lemos", "Women Strawweight", true],
-  ["Raquel Pennington", "Women Bantamweight", true],
-  ["Julianna Pena", "Women Bantamweight", true],
-  ["Kayla Harrison", "Women Bantamweight", true],
-  ["Ketlen Vieira", "Women Bantamweight", true]
+  ["Manon Fiorot", "Women's Flyweight", true],
+  ["Valentina Shevchenko", "Women's Flyweight", true],
+  ["Alexa Grasso", "Women's Flyweight", true],
+  ["Erin Blanchfield", "Women's Flyweight", true],
+  ["Zhang Weili", "Women's Strawweight", true],
+  ["Tatiana Suarez", "Women's Strawweight", true],
+  ["Yan Xiaonan", "Women's Strawweight", true],
+  ["Amanda Lemos", "Women's Strawweight", true],
+  ["Raquel Pennington", "Women's Bantamweight", true],
+  ["Julianna Pena", "Women's Bantamweight", true],
+  ["Kayla Harrison", "Women's Bantamweight", true],
+  ["Ketlen Vieira", "Women's Bantamweight", true]
 ];
 
-async function init() {
-  let client;
+async function query(text, params = []) {
+  return pool.query(text, params);
+}
+
+async function getClient() {
+  return pool.connect();
+}
+
+async function initializeDatabase() {
+  const client = await getClient();
   try {
-    client = await pool.connect();
     await client.query("BEGIN");
 
     await client.query(`
@@ -134,32 +141,29 @@ async function init() {
       );
     `);
 
-    for (const fighter of fighters) {
+    for (const fighter of seededFighters) {
       await client.query(
         `
-        INSERT INTO fighters (name, weight_class, is_ranked, has_ufc_contract)
-        VALUES ($1, $2, $3, TRUE)
-        ON CONFLICT (name) DO NOTHING
-      `,
+          INSERT INTO fighters (name, weight_class, is_ranked, has_ufc_contract)
+          VALUES ($1, $2, $3, TRUE)
+          ON CONFLICT (name) DO NOTHING
+        `,
         fighter
       );
     }
 
     await client.query("COMMIT");
-    console.log("Database initialized.");
   } catch (error) {
-    if (client) {
-      await client.query("ROLLBACK");
-      console.error("Failed to initialize database:", error.message);
-    } else {
-      console.warn(
-        "Database not reachable. Skipping DB init. Start PostgreSQL and rerun npm run db:init."
-      );
-    }
+    await client.query("ROLLBACK");
+    throw error;
   } finally {
-    if (client) client.release();
-    await pool.end();
+    client.release();
   }
 }
 
-init();
+module.exports = {
+  pool,
+  query,
+  getClient,
+  initializeDatabase
+};

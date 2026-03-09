@@ -7,11 +7,11 @@ function generateInviteCode() {
   return code;
 }
 
-function toBool(value) {
-  return value === true || value === "true" || value === "on" || value === 1 || value === "1";
+function toBoolean(value) {
+  return value === true || value === "true" || value === 1 || value === "1" || value === "on";
 }
 
 module.exports = {
   generateInviteCode,
-  toBool
+  toBoolean
 };

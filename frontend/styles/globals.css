@@ -4,13 +4,13 @@
 
 body {
   margin: 0;
-  font-family: Inter, Arial, sans-serif;
-  background: #f5f6fa;
+  font-family: Arial, sans-serif;
+  background: #f3f4f6;
   color: #111827;
 }
 
 .container {
-  width: min(1100px, 92vw);
+  width: min(1120px, 92vw);
   margin: 0 auto;
 }
 
@@ -43,13 +43,13 @@ body {
   color: #fff;
   text-decoration: none;
   background: transparent;
-  border: 0;
+  border: none;
   cursor: pointer;
   font: inherit;
   padding: 0;
 }
 
-.main {
+.main-content {
   padding: 20px 0 40px;
 }
 
@@ -106,9 +106,21 @@ textarea {
   color: #1d4ed8;
 }
 
-.actions {
+.button-row {
   display: flex;
   gap: 10px;
+}
+
+.narrow {
+  max-width: 560px;
+}
+
+.error {
+  border: 1px solid #fca5a5;
+  border-radius: 8px;
+  background: #fee2e2;
+  color: #7f1d1d;
+  padding: 10px;
 }
 
 .league-list {
@@ -126,18 +138,6 @@ textarea {
   color: inherit;
 }
 
-.error {
-  border: 1px solid #fca5a5;
-  background: #fee2e2;
-  color: #7f1d1d;
-  border-radius: 8px;
-  padding: 10px;
-}
-
-.narrow {
-  max-width: 560px;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -145,9 +145,9 @@ table {
 
 th,
 td {
+  padding: 8px 6px;
   border-bottom: 1px solid #e5e7eb;
   text-align: left;
-  padding: 8px 6px;
 }
 
 .inline-row {

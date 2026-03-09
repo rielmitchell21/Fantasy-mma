@@ -1,42 +1,42 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import Layout from "../components/Layout";
-import { fetchCurrentUser } from "../lib/client-auth";
+import { getCurrentUser } from "../lib/api";
 
 export default function HomePage() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    fetchCurrentUser().then(setUser);
+    getCurrentUser().then(setUser).catch(() => setUser(null));
   }, []);
 
   return (
     <Layout user={user} title="Fantasy UFC MVP">
       <section className="card">
-        <h2>Rules in this MVP</h2>
+        <h2>Complete MVP Features</h2>
         <ul>
-          <li>5-10 users per league</li>
-          <li>15-20 fighters per user roster</li>
-          <li>Only UFC roster fighters can be drafted/scored</li>
-          <li>No fights before draft start count</li>
-          <li>Season lasts one year from draft start</li>
-          <li>Max 6 points per winning fighter per fight</li>
+          <li>Next.js frontend + Node.js backend + PostgreSQL</li>
+          <li>User authentication (signup, login, logout)</li>
+          <li>Leagues with 5-10 users</li>
+          <li>Draft with 15-20 fighters per user from UFC roster</li>
+          <li>Commissioner controls draft start and fight recording</li>
+          <li>Scoring max 6 points per winning fighter</li>
         </ul>
       </section>
 
       <section className="card">
         {!user ? (
-          <div className="actions">
+          <div className="button-row">
             <Link href="/signup" className="button">
               Create Account
             </Link>
             <Link href="/login" className="button secondary">
-              Login
+              Log In
             </Link>
           </div>
         ) : (
           <Link href="/dashboard" className="button">
-            Go to Dashboard
+            Open Dashboard
           </Link>
         )}
       </section>

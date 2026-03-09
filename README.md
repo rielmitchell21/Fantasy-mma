@@ -1,64 +1,64 @@
-# Fantasy UFC MVP (Next.js + Node.js API + PostgreSQL)
+# Fantasy UFC MVP (Monorepo)
 
-This repo contains a complete fantasy UFC MVP:
+Complete fantasy UFC MVP from scratch with:
 
-- **Frontend:** Next.js
-- **Backend:** Node.js API routes (inside Next.js)
-- **Database:** PostgreSQL
-- **Auth:** signup/login/logout with server-side sessions
-- **Leagues:** 5-10 users
-- **Draft:** 15-20 fighters per user, UFC-contracted fighters only
-- **Scoring:** winner-only scoring, max 6 points per fight
+- **Frontend:** Next.js (`frontend/`)
+- **Backend:** Node.js + Express (`backend/`)
+- **Database:** PostgreSQL (`docker-compose.yml`)
+- **Authentication:** user signup/login/logout with cookie sessions
+- **Leagues:** enforced 5-10 users
+- **Draft:** enforced 15-20 fighters per user from UFC roster
+- **Scoring:** max 6 points per winning fight
 
-## Scoring Rules
+## Folder Structure
 
-Winning fighter gets:
+```txt
+.
+├─ frontend/
+├─ backend/
+├─ docker-compose.yml
+├─ package.json
+├─ package-lock.json
+└─ .env.example
+```
 
-- 1 point for win
-- +1 for finish
-- +1 for 5-round fight
-- +1 for championship fight
-- +1 for fighting ranked opponent
-- +1 for title move fight
+## Scoring Rules (winner only)
 
-Losing fighter gets **0** points.
+- +1 Win
+- +1 Finish
+- +1 Five-round fight
+- +1 Championship fight
+- +1 Ranked opponent
+- +1 Title move fight
 
-## Local Setup
+Max = **6 points** per winning fighter.  
+Loser gets **0 points**.
 
-1) Start PostgreSQL:
+## Run locally
+
+1. Start PostgreSQL:
 
 ```bash
 docker compose up -d
 ```
 
-2) Configure env:
+2. (Optional) copy env templates:
 
 ```bash
 cp .env.example .env
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env.local
 ```
 
-3) Install and run:
+3. Install and run both apps:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+4. Open:
 
-`npm run dev` automatically runs DB initialization (`scripts/init-db.js`) before starting Next.js.
+`http://localhost:3000`
 
-## Main API Endpoints
-
-- `POST /api/auth/signup`
-- `POST /api/auth/login`
-- `POST /api/auth/logout`
-- `GET /api/auth/me`
-- `GET /api/leagues`
-- `POST /api/leagues`
-- `POST /api/leagues/join`
-- `GET /api/leagues/:id`
-- `POST /api/leagues/:id/start-draft`
-- `POST /api/leagues/:id/draft`
-- `POST /api/leagues/:id/fighters`
-- `POST /api/leagues/:id/fights`
+Backend runs on `http://localhost:4000` and frontend proxies `/api/*` to it.

@@ -1,28 +1,29 @@
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { apiRequest } from "../lib/api";
 
 export default function Layout({ user, title, children }) {
+  const router = useRouter();
+
+  async function logout() {
+    await apiRequest("/api/auth/logout", { method: "POST" });
+    router.push("/login");
+  }
+
   return (
     <>
       <header className="topbar">
         <div className="container topbar-inner">
           <Link href="/" className="brand">
-            Fantasy UFC MVP
+            Fantasy UFC
           </Link>
           <nav className="nav">
             {user ? (
               <>
                 <Link href="/dashboard">Dashboard</Link>
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault();
-                    await fetch("/api/auth/logout", { method: "POST" });
-                    window.location.href = "/login";
-                  }}
-                >
-                  <button type="submit" className="link-button">
-                    Logout
-                  </button>
-                </form>
+                <button className="link-button" onClick={logout}>
+                  Logout
+                </button>
               </>
             ) : (
               <>
@@ -33,7 +34,8 @@ export default function Layout({ user, title, children }) {
           </nav>
         </div>
       </header>
-      <main className="container main">
+
+      <main className="container main-content">
         <h1>{title}</h1>
         {children}
       </main>
