@@ -1,0 +1,29 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "description": "A Fantasy MMA website where users draft fighters",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rielmitchell21/Fantasy-mma.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/rielmitchell21/Fantasy-mma/issues"
+  },
+  "homepage": "https://github.com/rielmitchell21/Fantasy-mma#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^12.6.2",
+    "connect-sqlite3": "^0.9.16",
+    "dayjs": "^1.11.19",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0"
+  }
+}

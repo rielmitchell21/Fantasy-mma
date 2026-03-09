@@ -1,0 +1,215 @@
+<%- include("partials/header", { title, currentUser, flash }) %>
+
+<section class="card">
+  <h1><%= league.name %></h1>
+  <p>
+    Commissioner: <strong><%= league.commissioner_username %></strong> |
+    Invite code: <strong><%= league.invite_code %></strong>
+  </p>
+  <p>
+    Members: <strong><%= league.member_count %> / <%= league.max_users %></strong> |
+    Roster limit: <strong><%= league.roster_size %></strong> fighters per user
+  </p>
+  <% if (league.draft_started_at) { %>
+    <p>
+      Draft started <strong><%= league.draft_started_at %></strong>. Scoring season ends
+      <strong><%= league.season_ends_at %></strong>.
+    </p>
+  <% } else { %>
+    <p>Draft has not started. No fights count until draft is started.</p>
+  <% } %>
+
+  <% if (isCommissioner && !league.draft_started_at) { %>
+    <form action="/leagues/<%= league.id %>/start-draft" method="post">
+      <button class="button" type="submit">Start Draft + Start Year Season</button>
+    </form>
+    <small>At least <%= league.min_users %> members are required before draft starts.</small>
+  <% } %>
+</section>
+
+<section class="grid-two">
+  <article class="card">
+    <h2>Standings</h2>
+    <% if (standings.length === 0) { %>
+      <p>No users yet.</p>
+    <% } else { %>
+      <table>
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>User</th>
+            <th>Points</th>
+            <th>Scoring Wins</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% standings.forEach((row, idx) => { %>
+            <tr>
+              <td><%= idx + 1 %></td>
+              <td><%= row.username %></td>
+              <td><strong><%= row.points %></strong></td>
+              <td><%= row.scoringWins %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </article>
+
+  <article class="card">
+    <h2>League members</h2>
+    <ul class="plain-list">
+      <% members.forEach((member) => { %>
+        <li>
+          <strong><%= member.username %></strong>
+          (<%= member.roster_count %> / <%= league.roster_size %>)
+        </li>
+      <% }) %>
+    </ul>
+  </article>
+</section>
+
+<section class="grid-two">
+  <article class="card">
+    <h2>Your roster (<%= myRoster.length %> / <%= league.roster_size %>)</h2>
+    <% if (myRoster.length === 0) { %>
+      <p>No fighters drafted yet.</p>
+    <% } else { %>
+      <ul class="plain-list">
+        <% myRoster.forEach((fighter) => { %>
+          <li><strong><%= fighter.name %></strong> - <%= fighter.weight_class || "Unknown class" %></li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <% if (league.draft_started_at) { %>
+      <h3>Draft fighter</h3>
+      <% if (availableFighters.length === 0) { %>
+        <p>No available UFC fighters left in this league draft pool.</p>
+      <% } else { %>
+        <form action="/leagues/<%= league.id %>/draft" method="post" class="form-grid">
+          <label>
+            Available fighter
+            <select name="fighterId" required>
+              <% availableFighters.forEach((fighter) => { %>
+                <option value="<%= fighter.id %>">
+                  <%= fighter.name %>
+                  <% if (fighter.weight_class) { %> - <%= fighter.weight_class %><% } %>
+                  <% if (fighter.is_ranked) { %> (Ranked)<% } %>
+                </option>
+              <% }) %>
+            </select>
+          </label>
+          <button class="button" type="submit">Draft fighter</button>
+        </form>
+      <% } %>
+    <% } %>
+  </article>
+
+  <article class="card">
+    <h2>Record fights (commissioner)</h2>
+    <% if (!isCommissioner) { %>
+      <p>Only commissioner can add fights and fighters.</p>
+    <% } else { %>
+      <h3>Add UFC fighter to pool</h3>
+      <form action="/leagues/<%= league.id %>/fighters/add" method="post" class="form-grid">
+        <label>
+          Fighter name
+          <input type="text" name="name" required />
+        </label>
+        <label>
+          Weight class
+          <input type="text" name="weightClass" />
+        </label>
+        <label class="checkbox-row">
+          <input type="checkbox" name="isRanked" />
+          Ranked fighter
+        </label>
+        <button type="submit" class="button button-secondary">Add fighter</button>
+      </form>
+
+      <% if (league.draft_started_at) { %>
+        <h3>Record completed fight result</h3>
+        <% if (allUfcFighters.length < 2) { %>
+          <p>Need at least two UFC-contracted fighters in the pool to record a fight.</p>
+        <% } else { %>
+          <form action="/leagues/<%= league.id %>/fights/add" method="post" class="form-grid">
+            <label>
+              Fight date
+              <input type="date" name="fightDate" value="<%= today %>" required />
+            </label>
+            <label>
+              Winner
+              <select name="winnerFighterId" required>
+                <% allUfcFighters.forEach((fighter) => { %>
+                  <option value="<%= fighter.id %>"><%= fighter.name %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label>
+              Loser
+              <select name="loserFighterId" required>
+                <% allUfcFighters.forEach((fighter) => { %>
+                  <option value="<%= fighter.id %>"><%= fighter.name %></option>
+                <% }) %>
+              </select>
+            </label>
+            <label>
+              Method (optional)
+              <input type="text" name="method" placeholder="KO/TKO, submission, decision..." />
+            </label>
+            <label class="checkbox-row"><input type="checkbox" name="wasFinish" /> Finish</label>
+            <label class="checkbox-row"><input type="checkbox" name="wasFiveRoundFight" /> 5 round fight</label>
+            <label class="checkbox-row"><input type="checkbox" name="wasChampionshipFight" /> Championship fight</label>
+            <label class="checkbox-row"><input type="checkbox" name="facedRankedFighter" /> Faced ranked fighter</label>
+            <label class="checkbox-row">
+              <input type="checkbox" name="vacatedTitleForNewDivisionTitleFight" />
+              Vacated title and moved divisions for title fight
+            </label>
+            <label>
+              Notes
+              <textarea name="notes" rows="3"></textarea>
+            </label>
+            <button type="submit" class="button">Record fight</button>
+          </form>
+        <% } %>
+      <% } else { %>
+        <p>Start draft first. No fights count before draft starts.</p>
+      <% } %>
+    <% } %>
+  </article>
+</section>
+
+<section class="card">
+  <h2>Scored fight history</h2>
+  <% if (fights.length === 0) { %>
+    <p>No scored fights yet.</p>
+  <% } else { %>
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Winner</th>
+          <th>Loser</th>
+          <th>Method</th>
+          <th>Points Awarded</th>
+          <th>Awarded To</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% fights.forEach((fight) => { %>
+          <tr>
+            <td><%= fight.fight_date %></td>
+            <td><%= fight.winner_name %></td>
+            <td><%= fight.loser_name %></td>
+            <td><%= fight.method || "N/A" %></td>
+            <td><%= fight.pointsAwardedToWinner %></td>
+            <td><%= fight.awardedToUser || "No roster owner" %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</section>
+
+<%- include("partials/footer") %>
